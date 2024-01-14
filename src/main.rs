@@ -1,12 +1,15 @@
 use std::env;
 use std::error::Error;
 use std::fs::File;
-use std::io::{BufWriter, Write};
+use std::io::BufWriter;
+use std::fmt::Write;
 
 fn main() -> Result<(),Box<dyn Error>>{
     let n: i64 = env::args().nth(1).unwrap().parse()?;
     let out = File::create(format!("gcp{n}.cnf"))?;
-    let mut w = BufWriter::new(out);
+    let mut outf = BufWriter::new(out);
+    let mut w = String::new();
+    let mut clauses: u64 = 0;
 
     writeln!(&mut w, "c GCP for {n}")?;
 
@@ -17,6 +20,7 @@ fn main() -> Result<(),Box<dyn Error>>{
                 let k = 4 * y * n + 4 * x + c;
                 write!(&mut w, "{k} ")?;
             }
+            clauses += 1;
             writeln!(&mut w, "0")?;
         }
     }
@@ -30,6 +34,7 @@ fn main() -> Result<(),Box<dyn Error>>{
                     let k2 = -(4 * y * n + 4 * x + c2);
 
                     writeln!(&mut w, "{k1} {k2} 0")?;
+                    clauses += 1;
                 }
             }
         }
@@ -46,10 +51,17 @@ fn main() -> Result<(),Box<dyn Error>>{
                         let k3 = -(4 * y2 * n + 4 * x1 + c);
                         let k4 = -(4 * y2 * n + 4 * x2 + c);
                         writeln!(&mut w, "{k1} {k2} {k3} {k4} 0")?;
+                        clauses += 1;
                     }
                 }
             }
         }
     }
+    {
+        use std::io::Write;
+        writeln!(&mut outf, "p cnf {} {}", 4 * n * n, clauses)?;
+        write!(&mut outf, "{w}")?;
+    }
+    // println!("{w}");
     Ok(())
 }
